@@ -1,0 +1,78 @@
+name: Task Management CI
+
+on:
+  push:
+    branches: [ 'main', 'features/*']
+  pull_request:
+    branches: [ 'main' ]
+  workflow_dispatch:
+
+jobs:
+  code-quality-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Run spotbugs check
+        run: mvn clean validate spotbugs:check
+
+  build-and-run-test:
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8
+        env:
+          MYSQL_ROOT_PASSWORD: ${{ secrets.ROOT_PASSWORD }}
+          MYSQL_DATABASE: ${{ secrets.DATABASE }}
+          MYSQL_USER: ${{ secrets.DATABASE_USERNAME }}
+          MYSQL_PASSWORD: ${{ secrets.DATABASE_PASSWORD }}
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd "mysqladmin ping --silent"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: wait for mysql to be ready
+        run: |
+          for i in {30..0}; do
+            if docker exec mysql mysql -u $MYSQL_USER -p $MYSQL_PASSWORD -e 'SELECT 1' $MYSQL_DATABASE; then
+              echo "MySQL is up and running"
+              break
+            fi
+            echo 'Waiting for MySQL...'
+            sleep 1
+          done
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: 17
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Cache Maven dependency
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: maven-${{ runner.os }}-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            maven-${{ runner.os }}-
+
+      - name: Build and run tests with coverage
+        env:
+          DATABASE_URL: mysql://localhost/${{ secrets.DATABASE }}
+          DATABASE_USERNAME: ${{ secrets.DATABASE_USERNAME }}
+          DATABASE_PASSWORD: ${{ secrets.DATABASE_PASSWORD }}
+        run: mvn clean install
