@@ -64,9 +64,9 @@ jobs:
 
       - name: Run a script to export env variable
         run: |
-          export DATABASE_URL="${{ secrets.DATAABASE.URL }}
-          export DATABASE_USERNAME=${{ secrets.DATABASE_USERNAME }}
-          export DATABASE_PASSWORD=${{ secrets.DATABASE_PASSWORD }}
+          export DATABASE_URL="${{ secrets.DATAABASE.URL }}"
+          export DATABASE_USERNAME="${{ secrets.DATABASE_USERNAME }}"
+          export DATABASE_PASSWORD="${{ secrets.DATABASE_PASSWORD }}"
 
       - name: Cache Maven dependency
         uses: actions/cache@v4
