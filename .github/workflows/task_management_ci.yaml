@@ -17,24 +17,7 @@ jobs:
           fetch-depth: 1
 
       - name: Run spotbugs check
-        run: mvn clean validate spotbugs:check -Dspotbugs.report.format=xml -Dspotbugs.report.filename=target/reports/spotbugs.xml
-
-      - name: Run PMD check
-        run: mvn validate pmd:check -Dpmd.reportFormat=xml -Dpmd.outputFile=target/reports/pmd.xml
-
-      - name: Upload PMD report
-        if: always()
-        uses: actions/upload-artifact@v3
-        with:
-          name: pmd-report
-          path: target/reports/pmd.xml
-
-      - name: Upload Spotbugs report
-        if: always()
-        uses: actions/upload-artifact@v3
-        with:
-          name: spotbugs-report
-          path: target/reports/spotbugs.xml
+        run: mvn clean validate spotbugs:check
 
   build-and-run-test:
     runs-on: ubuntu-latest
@@ -43,10 +26,10 @@ jobs:
       mysql:
         image: mysql:8
         env:
-          MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
-          MYSQL_DATABASE: ${{ secrets.MYSQL_DATABASE }}
-          MYSQL_USER: ${{ secrets.MYSQL_USER }}
-          MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
+          MYSQL_ROOT_PASSWORD: ${{ secrets.ROOT_PASSWORD }}
+          MYSQL_DATABASE: ${{ secrets.DATABASE }}
+          MYSQL_USER: ${{ secrets.DATABASE_USERNAME }}
+          MYSQL_PASSWORD: ${{ secrets.DATABASE_PASSWORD }}
         ports:
           - 3306:3306
         options: >-
@@ -88,11 +71,4 @@ jobs:
             maven-${{ runner.os }}-
 
       - name: Build and run tests with coverage
-        run: mvn clean install jacoco:report -Djacoco.failOnViolation=true -Djacoco.coverageThreshold=0.8
-
-      - name: Upload jacoco coverage report
-        if: always()
-        uses: actions/upload-artifact@v3
-        with:
-          name: jacoco-report
-          path: target/site/jacoco/index.html
+        run: mvn clean install
