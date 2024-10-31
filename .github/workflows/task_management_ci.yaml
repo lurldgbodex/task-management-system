@@ -62,12 +62,6 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
-      - name: Run a script to export env variable
-        run: |
-          export DATABASE_URL="${{ secrets.DATAABASE.URL }}"
-          export DATABASE_USERNAME="${{ secrets.DATABASE_USERNAME }}"
-          export DATABASE_PASSWORD="${{ secrets.DATABASE_PASSWORD }}"
-
       - name: Cache Maven dependency
         uses: actions/cache@v4
         with:
@@ -77,4 +71,8 @@ jobs:
             maven-${{ runner.os }}-
 
       - name: Build and run tests with coverage
+        env:
+          DATABASE_URL: mysql://localhost/${{ secrets.DATABASE }}
+          DATABASE_USERNAME: ${{ secrets.DATABASE_USERNAME }}
+          DATABASE_PASSWORD: ${{ secrets.DATABASE_PASSWORD }}
         run: mvn clean install
