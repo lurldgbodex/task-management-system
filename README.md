@@ -59,8 +59,15 @@ mvn install
     The API should be running on http://localhost:8000. You can test the endpoints using a tool like postman or curl.
 
 ## API Endpoints
-|   HTTP Method     |   Endpoint    |   Description     |
-|-------------------|---------------|-------------------|
+The full API documentation is written using OpenAPI specifications on the endpoint `/docs`
+
+|   HTTP Method     | Endpoint      | Description                         |
+|-------------------|---------------|-------------------------------------|
+|   POST            | `/tasks`      | Creates a new task                  |
+|   GET             | `/tasks`      | Retrieves all tasks with pagination |
+|   GET             | `/tasks/:id`  | Retrieves a task by its ID          |
+|   PUT             | `/tasks/:id`  | Update an existing task by ID       |
+|   DELETE          | `/tasks/:id`  | Delete a task by ID                 |
 
 ## Error Handling
 The API provides descriptive error messages for common issues, such as:
