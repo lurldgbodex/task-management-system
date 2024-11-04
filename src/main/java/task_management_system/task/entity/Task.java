@@ -2,6 +2,8 @@ package task_management_system.task.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 import task_management_system.task.enums.TaskPriority;
 import task_management_system.task.enums.TaskStatus;
 import task_management_system.user.entity.User;
@@ -47,9 +49,11 @@ public class Task {
     @CollectionTable(name = "task_tags", joinColumns = @JoinColumn(name = "task_id"))
     private List<String> tags;
 
-    @Column(nullable = false)
+    @CreationTimestamp
+    @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    @UpdateTimestamp
     @Column(nullable = false)
     private LocalDateTime updatedAt;
 
