@@ -26,7 +26,7 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http
-                .csrf(AbstractHttpConfigurer::disable)
+                .csrf(AbstractHttpConfigurer::disable) // CSRF disabled because this is a stateless API using token-based authentication
                 .authorizeHttpRequests((requests) -> requests
                         .requestMatchers("/users/**").permitAll()
                         .requestMatchers("/api/docs/**", "/docs/**", "/swagger-ui/**").permitAll()
