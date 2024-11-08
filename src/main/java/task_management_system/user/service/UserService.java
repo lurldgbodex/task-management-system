@@ -26,10 +26,7 @@ public class UserService {
         String hashedPassword = passwordEncoder.encode(request.getPassword());
 
         // validate user does not exist already
-        userExist(
-                request.getEmail(),
-                request.getUsername()
-        );
+        userExist(request.getEmail(), request.getUsername());
 
         User newUser = User.builder()
                 .email(request.getEmail())
@@ -44,7 +41,7 @@ public class UserService {
 
     public LoginResponse authenticate(LoginRequest request) {
         User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new BadCredentialsException("Invalid user Credential"));
+                .orElseThrow(() -> new BadCredentialsException("Invalid user credential"));
 
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
@@ -53,20 +50,16 @@ public class UserService {
                 )
         );
 
-        TokenDto token = TokenDto.builder()
-                .token(jwtService.generateToken(user))
-                .expiresIn(jwtService.getExpirationTime())
-                .build();
+        String token = jwtService.generateToken(user);
 
         return LoginResponse.builder()
                 .accessToken(token)
-                .user(convertToDTO(user))
                 .build();
     }
 
     private UserDto convertToDTO(User user) {
         return UserDto.builder()
-                .userId(user.getId())
+                .userID(user.getId())
                 .email(user.getEmail())
                 .username(user.getUsername())
                 .enabled(user.isEnabled())
@@ -83,7 +76,7 @@ public class UserService {
             throw new BadRequestException("user with email already exists");
         }
 
-        if (name.isPresent()) {
+        if (name.isPresent() && username != null) {
             throw new BadRequestException("user with username already exists");
         }
     }
