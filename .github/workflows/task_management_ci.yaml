@@ -75,4 +75,5 @@ jobs:
           DATABASE_URL: mysql://localhost/${{ secrets.DATABASE }}
           DATABASE_USERNAME: ${{ secrets.DATABASE_USERNAME }}
           DATABASE_PASSWORD: ${{ secrets.DATABASE_PASSWORD }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
         run: mvn clean install
