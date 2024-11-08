@@ -115,12 +115,12 @@ public class GlobalExceptionHandler {
         return setResponse("400", ex.getMessage());
     }
 
-//    @ExceptionHandler(Exception.class)
-//    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-//    public CustomResponse handleSecurityException(Exception ex) {
-//        log.info(ex.getMessage());
-//        return setResponse("500", "Unknown internal server error");
-//    }
+    @ExceptionHandler(Exception.class)
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    public CustomResponse handleSecurityException(Exception ex) {
+        log.info(ex.getMessage());
+        return setResponse("500", "Unknown internal server error");
+    }
 
     private CustomResponse setResponse(String status, String message) {
         return CustomResponse.builder()
