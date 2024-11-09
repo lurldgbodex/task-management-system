@@ -9,7 +9,9 @@ import task_management_system.task.enums.TaskStatus;
 import task_management_system.user.entity.User;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Getter
@@ -58,6 +60,9 @@ public class Task {
     private LocalDateTime updatedAt;
 
     @ManyToOne
-    @JoinColumn(name = "created_by_id")
+    @JoinColumn(name = "created_by_id", updatable = false)
     private User createdBy;
+
+    @OneToMany(mappedBy = "task", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<TaskRole> taskRoles = new HashSet<>();
 }

@@ -8,6 +8,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -15,14 +16,20 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import task_management_system.dto.CustomResponse;
 import task_management_system.exception.BadRequestException;
+import task_management_system.exception.ForbiddenException;
 import task_management_system.exception.NotFoundException;
 import task_management_system.task.dto.CreateTaskRequest;
 import task_management_system.task.dto.TaskDto;
 import task_management_system.task.dto.UpdateTask;
 import task_management_system.task.entity.Task;
+import task_management_system.task.entity.TaskRole;
+import task_management_system.task.enums.RoleType;
 import task_management_system.task.enums.TaskPriority;
 import task_management_system.task.enums.TaskStatus;
 import task_management_system.task.repository.TaskRepository;
+import task_management_system.task.repository.TaskRoleRepository;
+import task_management_system.user.entity.User;
+import task_management_system.utils.Utils;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -36,16 +43,24 @@ class TaskServiceTest {
 
     @Mock
     private TaskRepository taskRepository;
+    @Mock
+    private TaskRoleRepository roleRepository;
     @InjectMocks
     private TaskService underTest;
 
     private Task task;
+    private User authUser;
 
     @BeforeEach
     void setup() {
         List<String> tags = new ArrayList<>();
         tags.add("setup-task");
         tags.add("Testing");
+
+        authUser = User.builder()
+                .email("user@email.com")
+                .id(UUID.randomUUID())
+                .build();
 
         task = Task.builder()
                 .id(UUID.randomUUID())
@@ -56,13 +71,14 @@ class TaskServiceTest {
                 .priority(TaskPriority.LOW)
                 .assignedTo("unkwnown@jondoe.com")
                 .tags(tags)
+                .createdBy(authUser)
                 .createdAt(LocalDateTime.MIN)
                 .updatedAt(LocalDateTime.MIN)
                 .build();
     }
 
     @Nested
-    @DisplayName("Tests for Create Task")
+    @DisplayName("Create Task Tests")
     class CreateTaskTest {
         private CreateTaskRequest createRequest;
 
@@ -83,39 +99,44 @@ class TaskServiceTest {
         @DisplayName("should create a Task when all fields are provided")
         void withAllFieldsProvided() {
             UUID id = UUID.randomUUID();
-            when(taskRepository.saveAndFlush(any(Task.class))).thenAnswer(invocation -> {
-               Task newTask = invocation.getArgument(0);
-               newTask.setId(id);
-               return newTask;
-            });
 
-            TaskDto response = underTest.createTask(createRequest);
+            try (MockedStatic<Utils> mockedStatic = mockStatic(Utils.class)) {
+                mockedStatic.when(Utils::getAuthenticatedUser).thenReturn(authUser);
 
-            ArgumentCaptor<Task> taskCaptor = ArgumentCaptor.forClass(Task.class);
-            verify(taskRepository, times(1)).saveAndFlush(taskCaptor.capture());
+                when(taskRepository.saveAndFlush(any(Task.class))).thenAnswer(invocation -> {
+                    Task newTask = invocation.getArgument(0);
+                    newTask.setId(id);
+                    return newTask;
+                });
 
-            Task savedTask = taskCaptor.getValue();
+                TaskDto response = underTest.createTask(createRequest);
 
-            // assert that the request data correct with saved data
-            assertEquals(createRequest.getTitle(), savedTask.getTitle());
-            assertEquals(createRequest.getDescription(), savedTask.getDescription());
-            assertEquals(createRequest.getTags(), savedTask.getTags());
-            assertEquals(createRequest.getStatus(), savedTask.getStatus());
-            assertEquals(createRequest.getPriority(), savedTask.getPriority());
-            assertEquals(createRequest.getAssignedTo(), savedTask.getAssignedTo());
+                ArgumentCaptor<Task> taskCaptor = ArgumentCaptor.forClass(Task.class);
+                verify(taskRepository, times(1)).saveAndFlush(taskCaptor.capture());
 
-            // assert that the response data is correct
-            assertNotNull(response);
-            assertEquals(response.getId(), savedTask.getId());
-            assertEquals(response.getTitle(), savedTask.getTitle());
-            assertEquals(response.getDescription(), savedTask.getDescription());
-            assertEquals(response.getDueDate(), savedTask.getDueDate());
-            assertEquals(response.getTags(), savedTask.getTags());
-            assertEquals(response.getStatus(), savedTask.getStatus());
-            assertEquals(response.getPriority(), savedTask.getPriority());
-            assertEquals(response.getAssignedTo(), savedTask.getAssignedTo());
-            assertEquals(response.getCreatedAt(), savedTask.getCreatedAt());
-            assertEquals(response.getUpdatedAt(), savedTask.getUpdatedAt());
+                Task savedTask = taskCaptor.getValue();
+
+                // assert that the request data correct with saved data
+                assertEquals(createRequest.getTitle(), savedTask.getTitle());
+                assertEquals(createRequest.getDescription(), savedTask.getDescription());
+                assertEquals(createRequest.getTags(), savedTask.getTags());
+                assertEquals(createRequest.getStatus(), savedTask.getStatus());
+                assertEquals(createRequest.getPriority(), savedTask.getPriority());
+                assertEquals(createRequest.getAssignedTo(), savedTask.getAssignedTo());
+
+                // assert that the response data is correct
+                assertNotNull(response);
+                assertEquals(response.getId(), savedTask.getId());
+                assertEquals(response.getTitle(), savedTask.getTitle());
+                assertEquals(response.getDescription(), savedTask.getDescription());
+                assertEquals(response.getDueDate(), savedTask.getDueDate());
+                assertEquals(response.getTags(), savedTask.getTags());
+                assertEquals(response.getStatus(), savedTask.getStatus());
+                assertEquals(response.getPriority(), savedTask.getPriority());
+                assertEquals(response.getAssignedTo(), savedTask.getAssignedTo());
+                assertEquals(response.getCreatedAt(), savedTask.getCreatedAt());
+                assertEquals(response.getUpdatedAt(), savedTask.getUpdatedAt());
+            }
         }
 
         @Test
@@ -123,48 +144,61 @@ class TaskServiceTest {
         void withInvalidDueDateFormat() {
             createRequest.setDueDate("2024/11/21");
 
-            assertThrows(BadRequestException.class, () ->
-                    underTest.createTask(createRequest));
+            try (MockedStatic<Utils> mockedStatic = mockStatic(Utils.class)) {
+                mockedStatic.when(Utils::getAuthenticatedUser).thenReturn(authUser);
+
+                assertThrows(BadRequestException.class, () ->
+                        underTest.createTask(createRequest));
+            }
         }
     }
 
     @Nested
-    @DisplayName("Tests for getting Task by ID")
+    @DisplayName("Get Task By ID Tests")
     class GetTaskByIDTest {
 
         @Test
         @DisplayName("should successfully get task with valid taskID")
         void withValidID() {
-            when(taskRepository.findById(task.getId())).thenReturn(Optional.of(task));
+            try (MockedStatic<Utils> mockedStatic = mockStatic(Utils.class)) {
+                mockedStatic.when(Utils::getAuthenticatedUser).thenReturn(authUser);
 
-            TaskDto response = underTest.getTaskByID(task.getId());
+                when(taskRepository.findById(task.getId())).thenReturn(Optional.of(task));
+                when(roleRepository.existsByTaskIdAndUserId(task.getId(), authUser.getId())).thenReturn(true);
 
-            assertEquals(task.getId(), response.getId());
-            assertEquals(task.getTitle(), response.getTitle());
-            assertEquals(task.getStatus(), response.getStatus());
-            assertEquals(task.getDescription(), response.getDescription());
-            assertEquals(task.getTags(), response.getTags());
-            assertEquals(task.getPriority(), response.getPriority());
-            assertEquals(task.getCreatedAt(), response.getCreatedAt());
-            assertEquals(task.getAssignedTo(), response.getAssignedTo());
-            assertEquals(task.getDueDate(), response.getDueDate());
-            assertEquals(task.getUpdatedAt(), response.getUpdatedAt());
+                TaskDto response = underTest.getTaskByID(task.getId());
 
-            verify(taskRepository, times(1)).findById(task.getId());
+                assertEquals(task.getId(), response.getId());
+                assertEquals(task.getTitle(), response.getTitle());
+                assertEquals(task.getStatus(), response.getStatus());
+                assertEquals(task.getDescription(), response.getDescription());
+                assertEquals(task.getTags(), response.getTags());
+                assertEquals(task.getPriority(), response.getPriority());
+                assertEquals(task.getCreatedAt(), response.getCreatedAt());
+                assertEquals(task.getAssignedTo(), response.getAssignedTo());
+                assertEquals(task.getDueDate(), response.getDueDate());
+                assertEquals(task.getUpdatedAt(), response.getUpdatedAt());
+
+                verify(taskRepository, times(1)).findById(task.getId());
+            }
         }
 
         @Test
         @DisplayName("should throw exception when get task with invalid id")
         void withInvalidID() {
-           Exception exception = assertThrows(NotFoundException.class, () -> underTest.getTaskByID(task.getId()));
-           assertEquals("Task not found with id: " +  task.getId(), exception.getMessage());
+            try (MockedStatic<Utils> mockedStatic = mockStatic(Utils.class)) {
+                mockedStatic.when(Utils::getAuthenticatedUser).thenReturn(authUser);
 
-           verify(taskRepository, times(1)).findById(task.getId());
+                Exception exception = assertThrows(NotFoundException.class, () -> underTest.getTaskByID(task.getId()));
+                assertEquals("Task not found with id: " +  task.getId(), exception.getMessage());
+
+                verify(taskRepository, times(1)).findById(task.getId());
+            }
         }
     }
 
     @Nested
-    @DisplayName("Tests for getting all Tasks")
+    @DisplayName("Get All Task Tests")
     class GetAllTasksTest {
 
         @Test
@@ -177,13 +211,17 @@ class TaskServiceTest {
             List<Task> tasks = Collections.singletonList(task);
             Page<Task> taskPage = new PageImpl<>(tasks, pageable, tasks.size());
 
-            when(taskRepository.findAll(pageable)).thenReturn(taskPage);
+            try (MockedStatic<Utils> mockedStatic = mockStatic(Utils.class)) {
+                mockedStatic.when(Utils::getAuthenticatedUser).thenReturn(authUser);
 
-            Page<TaskDto> response = underTest.getTasks(pageNumber, pageSize);
+                when(taskRepository.findTasksByUserRoles(authUser.getId(), pageable)).thenReturn(taskPage);
 
-            assertEquals(1, response.getTotalPages(), "Expected one total page");
-            assertEquals(10, response.getSize(), "Expected page size of 10");
-            assertEquals(task.getId(), response.getContent().get(0).getId(), "Expects task ID to match");
+                Page<TaskDto> response = underTest.getTasks(pageNumber, pageSize);
+
+                assertEquals(1, response.getTotalPages(), "Expected one total page");
+                assertEquals(10, response.getSize(), "Expected page size of 10");
+                assertEquals(task.getId(), response.getContent().get(0).getId(), "Expects task ID to match");
+            }
         }
 
         @Test
@@ -194,18 +232,29 @@ class TaskServiceTest {
             int pageSize = 10;
             Pageable pageable = PageRequest.of(outOfRangePageNumber, pageSize);
 
-            when(taskRepository.findAll(pageable)).thenReturn(Page.empty(pageable));
+            try (MockedStatic<Utils> mockedStatic = mockStatic(Utils.class)) {
+                mockedStatic.when(Utils::getAuthenticatedUser).thenReturn(authUser);
 
-            Page<TaskDto> result = underTest.getTasks(outOfRangePageNumber, pageSize);
+                when(taskRepository.findTasksByUserRoles(
+                        authUser.getId(), pageable)).thenReturn(Page.empty(pageable));
 
-            assertTrue(result.isEmpty(), "Expected an empty page for an out-of-range page number");
+                Page<TaskDto> result = underTest.getTasks(outOfRangePageNumber, pageSize);
+
+                assertTrue(result.isEmpty(), "Expected an empty page for an out-of-range page number");
+            }
         }
 
     }
 
     @Nested
-    @DisplayName("Tests for updating Tasks")
+    @DisplayName("Update Task Tests")
     class UpdateTaskTest {
+        private TaskRole role;
+
+        @BeforeEach
+        void setup() {
+            role = TaskRole.builder().build();
+        }
 
         @Test
         @DisplayName("should update a task when a valid id is provided")
@@ -214,25 +263,33 @@ class TaskServiceTest {
                     .title("Update Title")
                     .build();
 
-            when(taskRepository.findById(task.getId())).thenReturn(Optional.ofNullable(task));
+            role.setRoleType(RoleType.CREATOR);
 
-            assertEquals(task.getCreatedAt(), task.getUpdatedAt(),
-                    "expects the created and updated at to be equal before update");
+            try (MockedStatic<Utils> mockedStatic = mockStatic(Utils.class)) {
+                mockedStatic.when(Utils::getAuthenticatedUser).thenReturn(authUser);
 
-            String expectedMessage = "Task with id: " + task.getId() + " updated";
-            CustomResponse response = underTest.updateTask(task.getId(), request);
+                when(roleRepository.existsByTaskIdAndUserId(task.getId(), authUser.getId())).thenReturn(true);
+                when(taskRepository.findById(task.getId())).thenReturn(Optional.of(task));
+                when(roleRepository.findByTaskAndUser(task, authUser)).thenReturn(Optional.of(role));
 
-            assertEquals("success", response.status(), "expects status to be 'success'");
-            assertEquals(expectedMessage, response.message(), "expects response message to match");
-            verify(taskRepository, times(1)).findById(task.getId());
+                assertEquals(task.getCreatedAt(), task.getUpdatedAt(),
+                        "expects the created and updated at to be equal before update");
 
-            ArgumentCaptor<Task> taskCaptor = ArgumentCaptor.forClass(Task.class);
-            verify(taskRepository, times(1)).save(taskCaptor.capture());
+                String expectedMessage = "Task with id: " + task.getId() + " updated";
+                CustomResponse response = underTest.updateTask(task.getId(), request);
 
-            Task savedTask = taskCaptor.getValue();
-            assertEquals(request.getTitle(), savedTask.getTitle(), "Expects title to be updated");
-            assertEquals(task.getDescription(), savedTask.getDescription(), "Expects description to be updated");
-            assertNotEquals(task.getCreatedAt(), task.getUpdatedAt(), "Expects updatedAt to be updated");
+                assertEquals("success", response.status(), "expects status to be 'success'");
+                assertEquals(expectedMessage, response.message(), "expects response message to match");
+                verify(taskRepository, times(1)).findById(task.getId());
+
+                ArgumentCaptor<Task> taskCaptor = ArgumentCaptor.forClass(Task.class);
+                verify(taskRepository, times(1)).save(taskCaptor.capture());
+
+                Task savedTask = taskCaptor.getValue();
+                assertEquals(request.getTitle(), savedTask.getTitle(), "Expects title to be updated");
+                assertEquals(task.getDescription(), savedTask.getDescription(), "Expects description to be updated");
+                assertNotEquals(task.getCreatedAt(), task.getUpdatedAt(), "Expects updatedAt to be updated");
+            }
         }
 
         @Test
@@ -240,12 +297,21 @@ class TaskServiceTest {
         void withInvalidID() {
             UUID invalidID = UUID.randomUUID();
 
-            Exception exception = assertThrows(NotFoundException.class, () ->
-                    underTest.getTaskByID(invalidID));
-            assertEquals("Task not found with id: " +  invalidID, exception.getMessage());
+            UpdateTask request = UpdateTask.builder()
+                    .title("Full update title")
+                    .description("Full update description")
+                    .build();
 
-            verify(taskRepository, times(1)).findById(invalidID);
-            verify(taskRepository, never()).save(any(Task.class));
+            try (MockedStatic<Utils> mockedStatic = mockStatic(Utils.class)) {
+                mockedStatic.when(Utils::getAuthenticatedUser).thenReturn(authUser);
+
+                Exception exception = assertThrows(NotFoundException.class, () ->
+                        underTest.updateTask(invalidID, request));
+                assertEquals("Task not found with id: " +  invalidID, exception.getMessage());
+
+                verify(taskRepository, times(1)).findById(invalidID);
+                verify(taskRepository, never()).save(any(Task.class));
+            }
         }
 
         @Test
@@ -264,30 +330,38 @@ class TaskServiceTest {
                     .tags(tags)
                     .build();
 
-            when(taskRepository.findById(task.getId())).thenReturn(Optional.of(task));
+            role.setRoleType(RoleType.CREATOR);
 
-            CustomResponse response = underTest.updateTask(task.getId(), request);
+            try (MockedStatic<Utils> mockedStatic = mockStatic(Utils.class)) {
+                mockedStatic.when(Utils::getAuthenticatedUser).thenReturn(authUser);
 
-            String expectedMessage = "Task with id: " + task.getId() + " updated";
+                when(roleRepository.existsByTaskIdAndUserId(task.getId(), authUser.getId())).thenReturn(true);
+                when(taskRepository.findById(task.getId())).thenReturn(Optional.of(task));
+                when(roleRepository.findByTaskAndUser(task, authUser)).thenReturn(Optional.of(role));
 
-            // assert that response is correct
-            assertEquals("success", response.status(), "Expects status to be 'success'");
-            assertEquals(expectedMessage, response.message(), "Expects response message to match");
-            verify(taskRepository, times(1)).findById(task.getId());
+                CustomResponse response = underTest.updateTask(task.getId(), request);
 
-            ArgumentCaptor<Task> taskCaptor = ArgumentCaptor.forClass(Task.class);
-            verify(taskRepository, times(1)).save(taskCaptor.capture());
+                String expectedMessage = "Task with id: " + task.getId() + " updated";
 
-            Task savedTask = taskCaptor.getValue();
+                // assert that response is correct
+                assertEquals("success", response.status(), "Expects status to be 'success'");
+                assertEquals(expectedMessage, response.message(), "Expects response message to match");
+                verify(taskRepository, times(1)).findById(task.getId());
 
-            // assert that data is correctly saved
-            assertEquals(request.getTitle(), savedTask.getTitle(), "Expects title to be updated");
-            assertEquals(request.getDescription(), savedTask.getDescription(), "Expects description to be updated");
-            assertEquals(request.getStatus(), savedTask.getStatus(), "Expects status to be updated");
-            assertEquals(request.getPriority(), savedTask.getPriority(), "Expects priority to be updated");
-            assertEquals(request.getTags(), savedTask.getTags(), "Expects tags to be updated");
-            assertEquals(request.getDueDate(), savedTask.getDueDate(), "Expects dueDate to be updated");
-            assertEquals(request.getAssignedTo(), savedTask.getAssignedTo(),"Expects assignedTo to be updated");
+                ArgumentCaptor<Task> taskCaptor = ArgumentCaptor.forClass(Task.class);
+                verify(taskRepository, times(1)).save(taskCaptor.capture());
+
+                Task savedTask = taskCaptor.getValue();
+
+                // assert that data is correctly saved
+                assertEquals(request.getTitle(), savedTask.getTitle(), "Expects title to be updated");
+                assertEquals(request.getDescription(), savedTask.getDescription(), "Expects description to be updated");
+                assertEquals(request.getStatus(), savedTask.getStatus(), "Expects status to be updated");
+                assertEquals(request.getPriority(), savedTask.getPriority(), "Expects priority to be updated");
+                assertEquals(request.getTags(), savedTask.getTags(), "Expects tags to be updated");
+                assertEquals(request.getDueDate(), savedTask.getDueDate(), "Expects dueDate to be updated");
+                assertEquals(request.getAssignedTo(), savedTask.getAssignedTo(),"Expects assignedTo to be updated");
+            }
         }
 
         @Test
@@ -298,25 +372,57 @@ class TaskServiceTest {
                     .priority(TaskPriority.MEDIUM)
                     .build();
 
-            when(taskRepository.findById(task.getId())).thenReturn(Optional.of(task));
+            role.setRoleType(RoleType.CREATOR);
 
-            CustomResponse response = underTest.updateTask(task.getId(), request);
+            try (MockedStatic<Utils> mockedStatic = mockStatic(Utils.class)) {
+                mockedStatic.when(Utils::getAuthenticatedUser).thenReturn(authUser);
 
-            String expectedMessage = "Task with id: " + task.getId() + " updated";
+                when(roleRepository.existsByTaskIdAndUserId(task.getId(), authUser.getId())).thenReturn(true);
+                when(taskRepository.findById(task.getId())).thenReturn(Optional.of(task));
+                when(roleRepository.findByTaskAndUser(task, authUser)).thenReturn(Optional.of(role));
 
-            // assert that response is correct
-            assertEquals("success", response.status(), "Expects status to be 'success'");
-            assertEquals(expectedMessage, response.message(), "Expects response message to match");
-            verify(taskRepository, times(1)).findById(task.getId());
+                CustomResponse response = underTest.updateTask(task.getId(), request);
 
-            ArgumentCaptor<Task> taskCaptor = ArgumentCaptor.forClass(Task.class);
-            verify(taskRepository, times(1)).save(taskCaptor.capture());
+                String expectedMessage = "Task with id: " + task.getId() + " updated";
 
-            Task savedTask = taskCaptor.getValue();
+                // assert that response is correct
+                assertEquals("success", response.status(), "Expects status to be 'success'");
+                assertEquals(expectedMessage, response.message(), "Expects response message to match");
+                verify(taskRepository, times(1)).findById(task.getId());
 
-            // assert that data is correctly saved
-            assertEquals(request.getStatus(), savedTask.getStatus(), "Expects status to be updated");
-            assertEquals(request.getPriority(), savedTask.getPriority(), "Expects priority to be updated");
+                ArgumentCaptor<Task> taskCaptor = ArgumentCaptor.forClass(Task.class);
+                verify(taskRepository, times(1)).save(taskCaptor.capture());
+
+                Task savedTask = taskCaptor.getValue();
+
+                // assert that data is correctly saved
+                assertEquals(request.getStatus(), savedTask.getStatus(), "Expects status to be updated");
+                assertEquals(request.getPriority(), savedTask.getPriority(), "Expects priority to be updated");
+            }
+        }
+
+        @Test
+        @DisplayName("should only allow status update for non creator")
+        void withUserNotCreator() {
+            UpdateTask request = UpdateTask.builder()
+                    .status(TaskStatus.COMPLETED)
+                    .priority(TaskPriority.MEDIUM)
+                    .build();
+
+            role.setRoleType(RoleType.ASSIGNEE);
+
+            try (MockedStatic<Utils> mockedStatic = mockStatic(Utils.class)) {
+                mockedStatic.when(Utils::getAuthenticatedUser).thenReturn(authUser);
+
+                when(roleRepository.existsByTaskIdAndUserId(task.getId(), authUser.getId())).thenReturn(true);
+                when(taskRepository.findById(task.getId())).thenReturn(Optional.of(task));
+                when(roleRepository.findByTaskAndUser(task, authUser)).thenReturn(Optional.of(role));
+
+                Exception ex = assertThrows(ForbiddenException.class,
+                        () -> underTest.updateTask(task.getId(), request));
+
+                assertEquals("Only the status can be updated by assigned users.", ex.getMessage());
+            }
         }
     }
 
@@ -327,17 +433,26 @@ class TaskServiceTest {
         @Test
         @DisplayName("should delete task with valid id")
         void withValidID() {
-            when(taskRepository.findById(task.getId())).thenReturn(Optional.of(task));
+            try (MockedStatic<Utils> mockedStatic = mockStatic(Utils.class)) {
+                mockedStatic.when(Utils::getAuthenticatedUser).thenReturn(authUser);
 
-            CustomResponse response = underTest.deleteTask(task.getId());
+                TaskRole role = new TaskRole();
+                role.setRoleType(RoleType.CREATOR);
 
-            String expectedMessage = "Task with id: " + task.getId() + " deleted";
+                when(taskRepository.findById(task.getId())).thenReturn(Optional.of(task));
+                when(roleRepository.existsByTaskIdAndUserId(task.getId(), authUser.getId())).thenReturn(true);
+                when(roleRepository.findByTaskAndUser(task, authUser)).thenReturn(Optional.of(role));
 
-            assertEquals("success", response.status());
-            assertEquals(expectedMessage, response.message());
+                CustomResponse response = underTest.deleteTask(task.getId());
 
-            verify(taskRepository, times(1)).findById(task.getId());
-            verify(taskRepository, times(1)).delete(task);
+                String expectedMessage = "Task with id: " + task.getId() + " deleted";
+
+                assertEquals("success", response.status());
+                assertEquals(expectedMessage, response.message());
+
+                verify(taskRepository, times(1)).findById(task.getId());
+                verify(taskRepository, times(1)).delete(task);
+            }
         }
 
         @Test
@@ -345,13 +460,57 @@ class TaskServiceTest {
         void withInvalidID() {
             UUID invalidID = UUID.randomUUID();
 
-            Exception exception = assertThrows(NotFoundException.class, () ->
-                    underTest.getTaskByID(invalidID));
-            assertEquals("Task not found with id: " +  invalidID, exception.getMessage());
+            try (MockedStatic<Utils> mockedStatic = mockStatic(Utils.class)) {
+                mockedStatic.when(Utils::getAuthenticatedUser).thenReturn(authUser);
 
-            verify(taskRepository, times(1)).findById(invalidID);
-            verify(taskRepository, never()).save(any(Task.class));
+                Exception exception = assertThrows(NotFoundException.class, () ->
+                        underTest.deleteTask(invalidID));
+                assertEquals("Task not found with id: " +  invalidID, exception.getMessage());
+
+                verify(taskRepository, times(1)).findById(invalidID);
+                verify(taskRepository, never()).save(any(Task.class));
+            }
+        }
+
+        @Test
+        @DisplayName("should throw forbidden when delete task without creator role")
+        void withoutAuthorization() {
+            try (MockedStatic<Utils> mockedStatic = mockStatic(Utils.class)) {
+                mockedStatic.when(Utils::getAuthenticatedUser).thenReturn(authUser);
+
+                TaskRole role = new TaskRole();
+                role.setRoleType(RoleType.ASSIGNEE);
+
+                when(taskRepository.findById(task.getId())).thenReturn(Optional.of(task));
+                when(roleRepository.existsByTaskIdAndUserId(task.getId(), authUser.getId())).thenReturn(true);
+                when(roleRepository.findByTaskAndUser(task, authUser)).thenReturn(Optional.of(role));
+
+                Exception exception = assertThrows(ForbiddenException.class, () ->
+                        underTest.deleteTask(task.getId()));
+                assertEquals("only creator of task can delete task", exception.getMessage());
+
+                verify(taskRepository, times(1)).findById(task.getId());
+                verify(roleRepository).findByTaskAndUser(task, authUser);
+                verify(taskRepository, never()).save(any(Task.class));
+            }
+        }
+
+        @Test
+        @DisplayName("should throw forbidden when user is not associated to task")
+        void withoutRoleOnTask() {
+            try (MockedStatic<Utils> mockedStatic = mockStatic(Utils.class)) {
+                mockedStatic.when(Utils::getAuthenticatedUser).thenReturn(authUser);
+
+                when(taskRepository.findById(task.getId())).thenReturn(Optional.of(task));
+
+                Exception exception = assertThrows(ForbiddenException.class, () ->
+                        underTest.deleteTask(task.getId()));
+
+                assertEquals("You are not authorized to access this resource", exception.getMessage());
+
+                verify(taskRepository, times(1)).findById(task.getId());
+                verify(taskRepository, never()).save(any(Task.class));
+            }
         }
     }
-
 }
