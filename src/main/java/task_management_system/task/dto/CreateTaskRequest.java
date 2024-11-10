@@ -22,7 +22,10 @@ public class CreateTaskRequest {
     private String description;
 
     @NotBlank(message = "dueDate is required")
-    @Pattern(regexp = "\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}", message = "dueDate must be in the format yyyy-MM-dd'T'HH:mm:ss")
+    @Pattern(
+            regexp = "\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}",
+            message = "dueDate must be in the format yyyy-MM-ddTHH:mm:ss"
+    )
     private String dueDate;
 
     @NotNull(message = "status is required")

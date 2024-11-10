@@ -41,6 +41,9 @@ public class TaskService {
 
         try {
             dueDate = LocalDateTime.parse(taskRequest.getDueDate(), DATE_TIME_FORMATTER);
+            if (dueDate.isBefore(LocalDateTime.now())) {
+                throw new BadRequestException("due date must be in the future to be valid");
+            }
         } catch (DateTimeException dte) {
             throw new BadRequestException(dte.getMessage());
         }
@@ -57,13 +60,6 @@ public class TaskService {
                 .assignedTo(taskRequest.getAssignedTo())
                 .tags(taskRequest.getTags())
                 .build();
-
-        TaskRole role = TaskRole.builder()
-                .user(authUser)
-                .roleType(RoleType.CREATOR)
-                .build();
-
-        taskRoleRepository.save(role);
 
         taskRepository.saveAndFlush(task);
         return convertToDo(task);
@@ -166,7 +162,7 @@ public class TaskService {
     }
 
     private TaskDto convertToDo(Task task) {
-        return  TaskDto.builder()
+        return TaskDto.builder()
                 .id(task.getId())
                 .title(task.getTitle())
                 .description(task.getDescription())

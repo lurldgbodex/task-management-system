@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+import task_management_system.task.enums.RoleType;
 import task_management_system.task.enums.TaskPriority;
 import task_management_system.task.enums.TaskStatus;
 import task_management_system.user.entity.User;
@@ -65,4 +66,20 @@ public class Task {
 
     @OneToMany(mappedBy = "task", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<TaskRole> taskRoles = new HashSet<>();
+
+    @PrePersist
+    private void addCreatorRole() {
+        if (taskRoles == null) {
+            taskRoles = new HashSet<>();
+        }
+
+        if (createdBy != null) {
+            TaskRole creatorRole = TaskRole.builder()
+                    .task(this)
+                    .user(this.createdBy)
+                    .roleType(RoleType.CREATOR)
+                    .build();
+            taskRoles.add(creatorRole);
+        }
+    }
 }

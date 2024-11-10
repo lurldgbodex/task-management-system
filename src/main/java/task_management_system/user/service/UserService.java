@@ -61,7 +61,7 @@ public class UserService {
         return UserDto.builder()
                 .userID(user.getId())
                 .email(user.getEmail())
-                .username(user.getUsername())
+                .username(user.getName())
                 .enabled(user.isEnabled())
                 .accountExpired(!user.isAccountNonExpired())
                 .accountLocked(!user.isAccountNonLocked())
