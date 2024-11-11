@@ -87,7 +87,7 @@ class UserServiceTest {
 
             assertEquals(capturedUser.getId(), response.userID(), "Expects response userID to be same as captured UserID");
             assertEquals(capturedUser.getEmail(), response.email(), "Expects captured email to be same as response email");
-            assertNull(capturedUser.getUsername(), "Expects no username in the captured data as it's no provided");
+            assertNull(capturedUser.getName(), "Expects no username in the captured data as it's no provided");
             assertEquals(capturedUser.getPassword(), "encoded-password", "Expects captured password to be encoded");
 
             // validate the response
@@ -116,7 +116,7 @@ class UserServiceTest {
 
             assertEquals(capturedUser.getId(), response.userID(), "Expects response userID to be same as captured UserID");
             assertEquals(capturedUser.getEmail(), response.email(), "Expects captured email to be same as response email");
-            assertEquals(capturedUser.getUsername(), response.username(), "Expects no username in the captured data as it's no provided");
+            assertEquals(capturedUser.getName(), response.username(), "Expects no username in the captured data as it's no provided");
             assertEquals(capturedUser.getPassword(), "encoded-password", "Expects captured password to be encoded");
 
             // validate the response

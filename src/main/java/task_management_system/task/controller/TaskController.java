@@ -46,6 +46,13 @@ public class TaskController {
                             schema = @Schema(implementation = ValidationException.class)
                     )
             ),
+            @ApiResponse(
+                    responseCode = "401", description = "Unauthenticated user trying to create task",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = CustomResponse.class)
+                    )
+            ),
     })
     @Operation(
             summary = "Create a new task",

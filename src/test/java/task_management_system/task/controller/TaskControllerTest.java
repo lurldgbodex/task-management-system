@@ -15,15 +15,18 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import task_management_system.config.JwtService;
 import task_management_system.task.dto.CreateTaskRequest;
+import task_management_system.task.dto.TaskDto;
 import task_management_system.task.enums.TaskPriority;
 import task_management_system.task.enums.TaskStatus;
 import task_management_system.task.service.TaskService;
 import task_management_system.user.entity.User;
 
+import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -38,7 +41,6 @@ class TaskControllerTest {
     private JwtService jwtService;
     @Autowired
     private MockMvc mockMvc;
-
     private ObjectMapper objectMapper;
 
     @BeforeEach
@@ -56,6 +58,7 @@ class TaskControllerTest {
     class CreateTaskTests {
 
         private CreateTaskRequest createRequest;
+        private TaskDto taskDto;
 
         @BeforeEach
         void setUpCreateTask() {
@@ -68,21 +71,29 @@ class TaskControllerTest {
                     .tags(Collections.singletonList("Test"))
                     .dueDate("2024-11-21T14:20:10")
                     .build();
+
+            taskDto = TaskDto.builder()
+                    .id(UUID.randomUUID())
+                    .title(createRequest.getTitle())
+                    .description(createRequest.getDescription())
+                    .dueDate(LocalDateTime.parse(createRequest.getDueDate()))
+                    .createdBy(UUID.randomUUID())
+                    .status(createRequest.getStatus())
+                    .priority(createRequest.getPriority())
+                    .assignedTo(createRequest.getAssignedTo())
+                    .tags(createRequest.getTags())
+                    .createdAt(LocalDateTime.now())
+                    .updatedAt(LocalDateTime.now())
+                    .build();
         }
 
         @Test
         @WithMockUser
-        @Disabled
         @DisplayName("should create task successfully")
         void createTask() throws Exception {
             String request = objectMapper.writeValueAsString(createRequest);
 
-            User mockUser = User.builder()
-                    .id(UUID.randomUUID())
-                    .username("mock-user")
-                    .email("mock@user.com")
-                    .build();
-
+            when(taskService.createTask(createRequest)).thenReturn(taskDto);
 
             mockMvc.perform(post("/tasks")
                             .contentType(MediaType.APPLICATION_JSON)
@@ -92,13 +103,23 @@ class TaskControllerTest {
                     .andExpect(jsonPath("$.title").value(createRequest.getTitle()))
                     .andExpect(jsonPath("$.description").value(createRequest.getDescription()))
                     .andExpect(jsonPath("$.dueDate").value(createRequest.getDueDate()))
-                    .andExpect(jsonPath("$.tag").value(createRequest.getTags()))
-                    .andExpect(jsonPath("$.status").value(createRequest.getStatus()))
-                    .andExpect(jsonPath("$.priority").value(createRequest.getPriority()))
+                    .andExpect(jsonPath("$.status").value(createRequest.getStatus().toString()))
+                    .andExpect(jsonPath("$.priority").value(createRequest.getPriority().toString()))
                     .andExpect(jsonPath("$.assignedTo").value(createRequest.getAssignedTo()))
                     .andExpect(jsonPath("$.createdBy").exists())
                     .andExpect(jsonPath("$.createdAt").isNotEmpty())
                     .andExpect(jsonPath("$.updatedAt").isNotEmpty());
+        }
+
+        @Test
+        @WithMockUser
+        @Disabled("Not implemented")
+        void createTaskBadRequest() {
+        }
+
+        @Test
+        @Disabled("Not implemented")
+        void createTaskUnauthenticated() {
         }
     }
 

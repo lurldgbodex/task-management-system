@@ -87,7 +87,7 @@ class TaskServiceTest {
             createRequest = CreateTaskRequest.builder()
                     .title("Create Task Title")
                     .description("Create Task description")
-                    .dueDate("2020-10-21T20:12:40")
+                    .dueDate("2100-10-21T20:12:40")
                     .status(TaskStatus.PENDING)
                     .priority(TaskPriority.HIGH)
                     .assignedTo("self@engineer-task.com")
