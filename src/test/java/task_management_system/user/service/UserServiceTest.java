@@ -15,6 +15,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.crypto.password.PasswordEncoder;
 import task_management_system.config.JwtService;
 import task_management_system.exception.BadRequestException;
+import task_management_system.exception.UnauthorizedException;
 import task_management_system.user.dto.CreateUserRequest;
 import task_management_system.user.dto.LoginRequest;
 import task_management_system.user.dto.LoginResponse;
@@ -197,7 +198,7 @@ class UserServiceTest {
             when(userRepository.findByEmail(request.getEmail())).thenReturn(Optional.empty());
 
             // Act & Assert
-            Exception ex = assertThrows(BadCredentialsException.class,
+            Exception ex = assertThrows(UnauthorizedException.class,
                     () -> underTest.authenticate(request));
 
             assertEquals("Invalid user credential", ex.getMessage());

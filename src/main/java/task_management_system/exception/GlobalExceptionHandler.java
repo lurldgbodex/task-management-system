@@ -43,6 +43,12 @@ public class GlobalExceptionHandler {
         return setResponse("400", ex.getMessage());
     }
 
+    @ExceptionHandler(UnauthorizedException.class)
+    @ResponseStatus(HttpStatus.UNAUTHORIZED)
+    public CustomResponse handleUnauthorized(UnauthorizedException ex) {
+        return setResponse("401", ex.getMessage());
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ValidationException InvalidArgumentHandler(MethodArgumentNotValidException ex) {

@@ -88,8 +88,8 @@ public class TaskController {
     @GetMapping(produces = "application/json")
     public Page<TaskDto> getAllTasks(
             @Parameter(description = "Page number (starting from 0)") @RequestParam(defaultValue = "0") int page,
-            @Parameter(description = "page size (default is 10)") @RequestParam(defaultValue = "10") int size) {
-        return taskService.getTasks(page, size);
+            @Parameter(description = "page size (default is 20)") @RequestParam(defaultValue = "20") int limit) {
+        return taskService.getTasks(page, limit);
     }
 
 
