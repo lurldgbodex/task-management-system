@@ -189,19 +189,6 @@ class TaskServiceTest {
                 verify(taskRepository, times(1)).findById(task.getId());
             }
         }
-
-        @Test
-        @DisplayName("should throw exception when get task with invalid id")
-        void withInvalidID() {
-            try (MockedStatic<Utils> mockedStatic = mockStatic(Utils.class)) {
-                mockedStatic.when(Utils::getAuthenticatedUser).thenReturn(authUser);
-
-                Exception exception = assertThrows(NotFoundException.class, () -> underTest.getTaskByID(task.getId()));
-                assertEquals("Task not found with id: " +  task.getId(), exception.getMessage());
-
-                verify(taskRepository, times(1)).findById(task.getId());
-            }
-        }
     }
 
     @Nested

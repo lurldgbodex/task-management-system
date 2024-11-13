@@ -40,7 +40,7 @@ public class TaskController {
                     )
             ),
             @ApiResponse(
-                    responseCode = "400", description = "Invalid task data",
+                    responseCode = "400", description = "Invalid task request data",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ValidationException.class)
@@ -79,6 +79,20 @@ public class TaskController {
                     responseCode = "400", description = "Invalid pagination parameters",
                     content = @Content
             ),
+            @ApiResponse(
+                    responseCode = "401", description = "unauthenticated user trying to access task",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = CustomResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "403", description = "Authenticated user trying to access resource they are not authorized",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = CustomResponse.class)
+                    )
+            )
     })
     @Operation(
             summary = "Get all tasks with pagination",
@@ -91,7 +105,6 @@ public class TaskController {
             @Parameter(description = "page size (default is 20)") @RequestParam(defaultValue = "20") int limit) {
         return taskService.getTasks(page, limit);
     }
-
 
     @ApiResponses(value = {
             @ApiResponse(
@@ -108,6 +121,20 @@ public class TaskController {
                             schema = @Schema(implementation = CustomResponse.class)
                     )
             ),
+            @ApiResponse(
+                    responseCode = "401", description = "unauthenticated user trying to access task",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = CustomResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "403", description = "Authenticated user trying to access resource they are not authorized",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = CustomResponse.class)
+                    )
+            )
     })
     @Operation(
             summary = "Get a task by its ID",
@@ -142,6 +169,20 @@ public class TaskController {
                             schema = @Schema(implementation = CustomResponse.class)
                     )
             ),
+            @ApiResponse(
+                    responseCode = "401", description = "unauthenticated user trying to update task",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = CustomResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "403", description = "Authenticated user trying to update resource they are not authorized",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = CustomResponse.class)
+                    )
+            )
     })
     @Operation(
             summary = "Update an existing task",
@@ -165,6 +206,20 @@ public class TaskController {
             ),
             @ApiResponse(
                     responseCode = "404", description = "Task not found",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = CustomResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401", description = "unauthenticated user trying to delete task",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = CustomResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "403", description = "Authenticated user trying to access resource they are not authorized",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = CustomResponse.class)

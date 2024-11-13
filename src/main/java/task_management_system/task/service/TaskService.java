@@ -25,7 +25,6 @@ import task_management_system.user.entity.User;
 import task_management_system.utils.Utils;
 
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.UUID;
@@ -71,15 +70,11 @@ public class TaskService {
         return convertToDto(task);
     }
 
-    @Cacheable(value = "tasks", key = "#authUser.id + ':' + #page + ':' + #size")
     public Page<TaskDto> getTasks(int page, int size) {
         User authUser = Utils.getAuthenticatedUser();
 
         Pageable pageable = PageRequest.of(page, size);
-        Page<Task> tasks = taskRepository.findTasksByUserRoles(
-                authUser.getId(),
-                pageable
-        );
+        Page<Task> tasks = getTaskByRole(authUser.getId(), pageable);
 
         return tasks.map(this::convertToDto);
     }
@@ -141,6 +136,11 @@ public class TaskService {
     private Optional<Task> findTaskByID(UUID taskID) {
 
         return taskRepository.findById(taskID);
+    }
+
+    @Cacheable(value = "tasks", key = "#authUser.id + ':' + #page + ':' + #size")
+    private Page<Task> getTaskByRole(UUID userID, Pageable pageable) {
+        return taskRepository.findTasksByUserRoles(userID, pageable);
     }
 
     private Task getATaskByUser(UUID taskID, User authUser) {
