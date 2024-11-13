@@ -1,11 +1,14 @@
 package task_management_system.task.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import task_management_system.exception.BadRequestException;
 import task_management_system.exception.ForbiddenException;
 import task_management_system.exception.NotFoundException;
@@ -21,31 +24,26 @@ import task_management_system.task.repository.TaskRoleRepository;
 import task_management_system.user.entity.User;
 import task_management_system.utils.Utils;
 
-import java.time.DateTimeException;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
+import java.util.Collections;
+import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Consumer;
 
 @Service
+@EnableCaching
 @RequiredArgsConstructor
 public class TaskService {
 
     private final TaskRepository taskRepository;
     private final TaskRoleRepository taskRoleRepository;
-    private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
 
-    @Transactional
     public TaskDto createTask(CreateTaskRequest taskRequest) {
         User authUser = Utils.getAuthenticatedUser();
-        LocalDateTime dueDate;
+        LocalDateTime dueDate = Utils.parseDateTime(taskRequest.getDueDate());
 
-        try {
-            dueDate = LocalDateTime.parse(taskRequest.getDueDate(), DATE_TIME_FORMATTER);
-            if (dueDate.isBefore(LocalDateTime.now())) {
-                throw new BadRequestException("due date must be in the future to be valid");
-            }
-        } catch (DateTimeException dte) {
-            throw new BadRequestException(dte.getMessage());
+        if (dueDate.isBefore(LocalDateTime.now())) {
+            throw new BadRequestException("due date must be in the future to be valid");
         }
 
         Task task = Task.builder()
@@ -61,64 +59,50 @@ public class TaskService {
                 .tags(taskRequest.getTags())
                 .build();
 
-        taskRepository.saveAndFlush(task);
-        return convertToDo(task);
+        task = saveTask(task);
+        return convertToDto(task);
     }
 
     public TaskDto getTaskByID(UUID taskID) {
         User authUser = Utils.getAuthenticatedUser();
-        Task task = findTaskByID(taskID, authUser);
+        Task task = getATaskByUser(taskID, authUser);
 
-        return convertToDo(task);
+        return convertToDto(task);
     }
 
     public Page<TaskDto> getTasks(int page, int size) {
         User authUser = Utils.getAuthenticatedUser();
 
         Pageable pageable = PageRequest.of(page, size);
-        Page<Task> tasks = taskRepository.findTasksByUserRoles(
-                authUser.getId(),
-                pageable
-        );
+        Page<Task> tasks = getTaskByRole(authUser.getId(), pageable);
 
-        return tasks.map(this::convertToDo);
+        return tasks.map(this::convertToDto);
     }
 
     public CustomResponse updateTask(UUID taskID, UpdateTask updateRequest) {
         User authUser = Utils.getAuthenticatedUser();
-        Task task = findTaskByID(taskID, authUser);
+        Task task = getATaskByUser(taskID, authUser);
 
         TaskRole role = taskRoleRepository.findByTaskAndUser(task, authUser)
                 .orElseThrow(() -> new ForbiddenException("user has no role on this task"));
 
-        if (!role.getRoleType().equals(RoleType.CREATOR)) {
-            if (updateRequest.getTitle() != null ||
-                    updateRequest.getDescription() != null ||
-                    updateRequest.getDueDate() != null ||
-                    updateRequest.getPriority() != null ||
-                    updateRequest.getAssignedTo() != null ||
-                    updateRequest.getTags() != null) {
-                throw new ForbiddenException("Only the status can be updated by assigned users.");
-            }
+        if (!role.getRoleType().equals(RoleType.CREATOR) &&
+                (updateRequest.getTitle() != null || updateRequest.getDescription() != null ||
+                        updateRequest.getDueDate() != null || updateRequest.getPriority() != null ||
+                        updateRequest.getAssignedTo() != null || updateRequest.getTags() != null)) {
+            throw new ForbiddenException("Only the status can be updated by assigned users.");
         }
 
-        task.setTitle(updateRequest.getTitle() != null
-                ? updateRequest.getTitle() : task.getTitle());
-        task.setDescription(updateRequest.getDescription() != null
-                ? updateRequest.getDescription() : task.getDescription());
-        task.setStatus(updateRequest.getStatus() != null
-                ? updateRequest.getStatus() : task.getStatus());
-        task.setDueDate(updateRequest.getDueDate() != null
-                ? updateRequest.getDueDate() : task.getDueDate());
-        task.setPriority(updateRequest.getPriority() != null
-                ? updateRequest.getPriority() : task.getPriority());
-        task.setAssignedTo(updateRequest.getDescription() != null
-                ? updateRequest.getAssignedTo() : task.getAssignedTo());
-        task.setTags(updateRequest.getTags() != null
-                ? updateRequest.getTags() : task.getTags());
-        task.setUpdatedAt(LocalDateTime.now());
+        updateFieldIfPresent(updateRequest.getTitle(), task::setTitle);
+        updateFieldIfPresent(updateRequest.getDescription(), task::setDescription);
+        updateFieldIfPresent(updateRequest.getStatus(), task::setStatus);
+        updateFieldIfPresent(updateRequest.getDueDate(), task::setDueDate);
+        updateFieldIfPresent(updateRequest.getPriority(), task::setPriority);
+        updateFieldIfPresent(updateRequest.getAssignedTo(), task::setAssignedTo);
+        updateFieldIfPresent(updateRequest.getTags(), task::setTags);
 
-        taskRepository.save(task);
+        task.setUpdatedAt(LocalDateTime.now());
+        saveTask(task);
 
         return CustomResponse.builder()
                 .status("success")
@@ -128,31 +112,43 @@ public class TaskService {
 
     public CustomResponse deleteTask(UUID taskID) {
         User authUser = Utils.getAuthenticatedUser();
-        Task task = findTaskByID(taskID, authUser);
+        Task task = getATaskByUser(taskID, authUser);
 
         TaskRole role = taskRoleRepository.findByTaskAndUser(task, authUser)
                 .orElseThrow();
 
-        boolean hasAuthority = role.getRoleType().equals(RoleType.CREATOR);
-        if (!hasAuthority) {
+        if (!role.getRoleType().equals(RoleType.CREATOR)) {
             throw new ForbiddenException("only creator of task can delete task");
         }
 
-        taskRepository.delete(task);
+        deleteTask(task);
         return CustomResponse.builder()
                 .status("success")
                 .message("Task with id: " + taskID + " deleted")
                 .build();
     }
 
-    private Task findTaskByID(UUID taskID, User authUser) {
+    @CacheEvict(value = "tasks", key = "#taskID")
+    private void deleteTask(Task task) {
+        taskRepository.delete(task);
+    }
+    @Cacheable(value = "tasks", key = "#taskID", unless = "#result == null")
+    private Optional<Task> findTaskByID(UUID taskID) {
 
-        Task task = taskRepository.findById(taskID)
+        return taskRepository.findById(taskID);
+    }
+
+    @Cacheable(value = "tasks", key = "#authUser.id + ':' + #page + ':' + #size")
+    private Page<Task> getTaskByRole(UUID userID, Pageable pageable) {
+        return taskRepository.findTasksByUserRoles(userID, pageable);
+    }
+
+    private Task getATaskByUser(UUID taskID, User authUser) {
+
+        Task task = findTaskByID(taskID)
                 .orElseThrow(() -> new NotFoundException("Task not found with id: " +  taskID));
 
-        boolean hasRole = taskRoleRepository.existsByTaskIdAndUserId(
-                taskID, authUser.getId()
-        );
+        boolean hasRole = checkUserRoleOnTask(taskID, authUser.getId());
 
         if (!hasRole) {
             throw new ForbiddenException("You are not authorized to access this resource");
@@ -161,19 +157,38 @@ public class TaskService {
         return task;
     }
 
-    private TaskDto convertToDo(Task task) {
+    @CachePut(value = "tasks", key = "#task.id")
+    private Task saveTask(Task task) {
+        return taskRepository.save(task);
+    }
+
+    @Cacheable(value = "taskRoles", key = "#taskID + ':' + #authUser.id", unless = "#result == false")
+    private boolean checkUserRoleOnTask(UUID taskID, UUID userID) {
+        return taskRoleRepository.existsByTaskIdAndUserId(taskID, userID);
+    }
+    private TaskDto convertToDto(Task task) {
         return TaskDto.builder()
                 .id(task.getId())
                 .title(task.getTitle())
                 .description(task.getDescription())
                 .status(task.getStatus())
-                .assignedTo(task.getAssignedTo())
                 .dueDate(task.getDueDate())
-                .tags(task.getTags())
-                .priority(task.getPriority())
-                .createdBy(task.getCreatedBy().getId())
                 .createdAt(task.getCreatedAt())
                 .updatedAt(task.getUpdatedAt())
+                .priority(task.getPriority())
+                .assignedTo(Optional.ofNullable(task.getAssignedTo())
+                        .map(String::valueOf)
+                        .orElse(null))
+                .tags(Optional.ofNullable(task.getTags())
+                        .orElse(Collections.emptyList()))
+                .createdBy(task.getCreatedBy()
+                        .getId())
                 .build();
+    }
+
+    private <T> void updateFieldIfPresent(T fieldValue, Consumer<T> setter) {
+        if (fieldValue != null) {
+            setter.accept(fieldValue);
+        }
     }
 }

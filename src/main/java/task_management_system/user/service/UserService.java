@@ -2,12 +2,12 @@ package task_management_system.user.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import task_management_system.config.JwtService;
-import task_management_system.exception.BadRequestException;
+import task_management_system.exception.ConflictException;
+import task_management_system.exception.UnauthorizedException;
 import task_management_system.user.dto.*;
 import task_management_system.user.entity.User;
 import task_management_system.user.repository.UserRepository;
@@ -41,7 +41,7 @@ public class UserService {
 
     public LoginResponse authenticate(LoginRequest request) {
         User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new BadCredentialsException("Invalid user credential"));
+                .orElseThrow(() -> new UnauthorizedException("Invalid user credential"));
 
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
@@ -70,14 +70,16 @@ public class UserService {
 
     private void userExist(String userEmail, String username) {
         Optional<User> email = userRepository.findByEmail(userEmail);
-        Optional<User> name = userRepository.findByUsername(username);
 
         if (email.isPresent()) {
-            throw new BadRequestException("user with email already exists");
+            throw new ConflictException("user with email already exists");
         }
 
-        if (name.isPresent() && username != null) {
-            throw new BadRequestException("user with username already exists");
+        if (username == null) return;
+        Optional<User> name = userRepository.findByUsername(username);
+
+        if (name.isPresent()) {
+            throw new ConflictException("user with username already exists");
         }
     }
 }

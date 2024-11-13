@@ -7,12 +7,9 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import task_management_system.task.entity.Task;
-import task_management_system.task.entity.TaskRole;
-import task_management_system.task.enums.RoleType;
 import task_management_system.task.enums.TaskPriority;
 import task_management_system.task.enums.TaskStatus;
 import task_management_system.task.repository.TaskRepository;
-import task_management_system.task.repository.TaskRoleRepository;
 import task_management_system.user.entity.User;
 import task_management_system.user.repository.UserRepository;
 

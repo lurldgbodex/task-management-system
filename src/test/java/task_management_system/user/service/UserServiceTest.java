@@ -14,7 +14,8 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import task_management_system.config.JwtService;
-import task_management_system.exception.BadRequestException;
+import task_management_system.exception.ConflictException;
+import task_management_system.exception.UnauthorizedException;
 import task_management_system.user.dto.CreateUserRequest;
 import task_management_system.user.dto.LoginRequest;
 import task_management_system.user.dto.LoginResponse;
@@ -76,7 +77,6 @@ class UserServiceTest {
         void registerUser() {
             when(passwordEncoder.encode(request.getPassword())).thenReturn("encoded-password");
             when(userRepository.saveAndFlush(any(User.class))).then(invocation -> registerUser);
-            when(userRepository.findByUsername(null)).thenReturn(Optional.of(registerUser));
 
             UserDto response = underTest.registerUser(request);
 
@@ -136,7 +136,7 @@ class UserServiceTest {
             when(userRepository.findByUsername(request.getUsername()))
                     .thenReturn(Optional.of(registerUser));
 
-            Exception ex = assertThrows(BadRequestException.class, () ->
+            Exception ex = assertThrows(ConflictException.class, () ->
                     underTest.registerUser(request));
 
             assertEquals("user with username already exists", ex.getMessage());
@@ -149,7 +149,7 @@ class UserServiceTest {
             when(userRepository.findByEmail(request.getEmail()))
                     .thenReturn(Optional.of(registerUser));
 
-            Exception ex = assertThrows(BadRequestException.class, () ->
+            Exception ex = assertThrows(ConflictException.class, () ->
                     underTest.registerUser(request));
 
             assertEquals("user with email already exists", ex.getMessage());
@@ -191,13 +191,13 @@ class UserServiceTest {
         }
 
         @Test
-        @DisplayName("Should throw BadCredentialsException when user is not found")
+        @DisplayName("Should throw exception when user is not found")
         void authenticateWithInvalidEmail() {
             // Arrange
             when(userRepository.findByEmail(request.getEmail())).thenReturn(Optional.empty());
 
             // Act & Assert
-            Exception ex = assertThrows(BadCredentialsException.class,
+            Exception ex = assertThrows(UnauthorizedException.class,
                     () -> underTest.authenticate(request));
 
             assertEquals("Invalid user credential", ex.getMessage());
@@ -207,7 +207,7 @@ class UserServiceTest {
         }
 
         @Test
-        @DisplayName("Should throw BadCredentialsException for invalid credentials")
+        @DisplayName("Should throw exception for invalid credentials")
         void authenticateWithInvalidPassword() {
             // Arrange
             when(userRepository.findByEmail(request.getEmail())).thenReturn(Optional.of(user));
@@ -222,5 +222,4 @@ class UserServiceTest {
             verify(jwtService, never()).generateToken(any(User.class));
         }
     }
-
 }

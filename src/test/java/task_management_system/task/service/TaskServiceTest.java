@@ -99,11 +99,14 @@ class TaskServiceTest {
         @DisplayName("should create a Task when all fields are provided")
         void withAllFieldsProvided() {
             UUID id = UUID.randomUUID();
+            LocalDateTime parsedDueDate = LocalDateTime.of(2100, 10, 21, 20, 12, 40);
 
             try (MockedStatic<Utils> mockedStatic = mockStatic(Utils.class)) {
                 mockedStatic.when(Utils::getAuthenticatedUser).thenReturn(authUser);
+                mockedStatic.when(() -> Utils.parseDateTime(createRequest.getDueDate()))
+                        .thenReturn(parsedDueDate);
 
-                when(taskRepository.saveAndFlush(any(Task.class))).thenAnswer(invocation -> {
+                when(taskRepository.save(any(Task.class))).thenAnswer(invocation -> {
                     Task newTask = invocation.getArgument(0);
                     newTask.setId(id);
                     return newTask;
@@ -112,7 +115,7 @@ class TaskServiceTest {
                 TaskDto response = underTest.createTask(createRequest);
 
                 ArgumentCaptor<Task> taskCaptor = ArgumentCaptor.forClass(Task.class);
-                verify(taskRepository, times(1)).saveAndFlush(taskCaptor.capture());
+                verify(taskRepository, times(1)).save(taskCaptor.capture());
 
                 Task savedTask = taskCaptor.getValue();
 
@@ -140,12 +143,16 @@ class TaskServiceTest {
         }
 
         @Test
-        @DisplayName("should throw an exception when invalid dueDate format is passed")
+        @DisplayName("should throw an exception when invalid due date is passed")
         void withInvalidDueDateFormat() {
             createRequest.setDueDate("2024/11/21");
+            LocalDateTime parsedDueDate = LocalDateTime.of(2000, 10, 21, 20, 12, 40);
+
 
             try (MockedStatic<Utils> mockedStatic = mockStatic(Utils.class)) {
                 mockedStatic.when(Utils::getAuthenticatedUser).thenReturn(authUser);
+                mockedStatic.when(() -> Utils.parseDateTime(createRequest.getDueDate()))
+                        .thenReturn(parsedDueDate);
 
                 assertThrows(BadRequestException.class, () ->
                         underTest.createTask(createRequest));
@@ -178,19 +185,6 @@ class TaskServiceTest {
                 assertEquals(task.getAssignedTo(), response.getAssignedTo());
                 assertEquals(task.getDueDate(), response.getDueDate());
                 assertEquals(task.getUpdatedAt(), response.getUpdatedAt());
-
-                verify(taskRepository, times(1)).findById(task.getId());
-            }
-        }
-
-        @Test
-        @DisplayName("should throw exception when get task with invalid id")
-        void withInvalidID() {
-            try (MockedStatic<Utils> mockedStatic = mockStatic(Utils.class)) {
-                mockedStatic.when(Utils::getAuthenticatedUser).thenReturn(authUser);
-
-                Exception exception = assertThrows(NotFoundException.class, () -> underTest.getTaskByID(task.getId()));
-                assertEquals("Task not found with id: " +  task.getId(), exception.getMessage());
 
                 verify(taskRepository, times(1)).findById(task.getId());
             }

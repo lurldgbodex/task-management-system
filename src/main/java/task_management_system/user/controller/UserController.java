@@ -46,6 +46,13 @@ public class UserController {
                             schema = @Schema(implementation = CustomResponse.class)
                     )
             ),
+            @ApiResponse(
+                    responseCode = "409", description = "when user tries to create account with existing data",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = CustomResponse.class)
+                    )
+            )
     })
     @Operation(
             summary = "Create a new user",

@@ -76,4 +76,7 @@ jobs:
           DATABASE_USERNAME: ${{ secrets.DATABASE_USERNAME }}
           DATABASE_PASSWORD: ${{ secrets.DATABASE_PASSWORD }}
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          PASSWORD: ${{ secrets.SEED_PASSWORD }}
+          REDIS_HOST: ${{ secrets.REDIS_HOST }}
+
         run: mvn clean install
