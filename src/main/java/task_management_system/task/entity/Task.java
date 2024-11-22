@@ -11,7 +11,6 @@ import task_management_system.user.entity.User;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -45,6 +44,7 @@ public class Task {
     @Enumerated(EnumType.STRING)
     private TaskStatus status;
 
+    @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     private TaskPriority priority;
 
@@ -54,7 +54,7 @@ public class Task {
     @Column(name = "tag")
     @ElementCollection
     @CollectionTable(name = "task_tags", joinColumns = @JoinColumn(name = "task_id"))
-    private List<String> tags;
+    private Set<String> tags;
 
     @CreationTimestamp
     @Column(nullable = false, updatable = false)

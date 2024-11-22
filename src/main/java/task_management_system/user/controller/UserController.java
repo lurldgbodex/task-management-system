@@ -25,7 +25,7 @@ import task_management_system.user.service.UserService;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/users")
+@RequestMapping("/api/v1/users")
 @Tag(name = "UserController", description = "Controller for managing user authentication")
 public class UserController {
 

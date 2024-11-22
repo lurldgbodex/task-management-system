@@ -2,14 +2,11 @@ package task_management_system.task.dto;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import lombok.Builder;
 import lombok.Data;
-import task_management_system.task.enums.TaskPriority;
-import task_management_system.task.enums.TaskStatus;
 
-import java.util.List;
+import java.util.Set;
 
 @Data
 @Builder
@@ -26,15 +23,16 @@ public class CreateTaskRequest {
             regexp = "\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}",
             message = "dueDate must be in the format yyyy-MM-ddTHH:mm:ss"
     )
-    private String dueDate;
+    private String due_date;
 
-    @NotNull(message = "status is required")
-    private TaskStatus status;
+    @NotBlank(message = "status is required")
+    private String status;
 
-    private TaskPriority priority;
+    @NotBlank(message = "priority is required")
+    private String priority;
 
-    @Email(message = "assignedTo must be a valid email")
-    private String assignedTo;
+    @Email(message = "invalid email provided")
+    private String assigned_to;
 
-    private List<String> tags;
+    private Set<String> tags;
 }

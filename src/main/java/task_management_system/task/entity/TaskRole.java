@@ -26,11 +26,14 @@ public class TaskRole {
     private Long id;
 
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private RoleType roleType;
 
-    @ManyToOne
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @ManyToOne
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "task_id", nullable = false)
     private Task task;
 }

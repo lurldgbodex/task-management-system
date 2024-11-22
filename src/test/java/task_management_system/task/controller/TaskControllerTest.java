@@ -1,6 +1,5 @@
 package task_management_system.task.controller;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -10,7 +9,6 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
-import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import task_management_system.config.JwtService;
@@ -19,7 +17,6 @@ import task_management_system.task.dto.TaskDto;
 import task_management_system.task.enums.TaskPriority;
 import task_management_system.task.enums.TaskStatus;
 import task_management_system.task.service.TaskService;
-import task_management_system.user.entity.User;
 
 import java.time.LocalDateTime;
 import java.util.Collections;
@@ -65,25 +62,25 @@ class TaskControllerTest {
             createRequest = CreateTaskRequest.builder()
                     .title("Test Task Title")
                     .description("Test Task description")
-                    .status(TaskStatus.PENDING)
-                    .priority(TaskPriority.LOW)
-                    .assignedTo("john@doe.com")
-                    .tags(Collections.singletonList("Test"))
-                    .dueDate("2024-11-21T14:20:10")
+                    .status(TaskStatus.PENDING.toString())
+                    .priority(TaskPriority.LOW.toString())
+                    .assigned_to("john@doe.com")
+                    .tags(Collections.singleton("Test"))
+                    .due_date("2024-11-21T14:20:10")
                     .build();
 
             taskDto = TaskDto.builder()
                     .id(UUID.randomUUID())
                     .title(createRequest.getTitle())
                     .description(createRequest.getDescription())
-                    .dueDate(LocalDateTime.parse(createRequest.getDueDate()))
-                    .createdBy(UUID.randomUUID())
-                    .status(createRequest.getStatus())
-                    .priority(createRequest.getPriority())
-                    .assignedTo(createRequest.getAssignedTo())
+                    .due_date(LocalDateTime.parse(createRequest.getDue_date()))
+                    .created_by(UUID.randomUUID())
+                    .status(TaskStatus.PENDING)
+                    .priority(TaskPriority.LOW)
+                    .assigned_to(createRequest.getAssigned_to())
                     .tags(createRequest.getTags())
-                    .createdAt(LocalDateTime.now())
-                    .updatedAt(LocalDateTime.now())
+                    .created_at(LocalDateTime.now())
+                    .updated_at(LocalDateTime.now())
                     .build();
         }
 
@@ -95,17 +92,17 @@ class TaskControllerTest {
 
             when(taskService.createTask(createRequest)).thenReturn(taskDto);
 
-            mockMvc.perform(post("/tasks")
+            mockMvc.perform(post("/api/v1/tasks")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(request))
                     .andExpect(status().isCreated())
                     .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                     .andExpect(jsonPath("$.title").value(createRequest.getTitle()))
                     .andExpect(jsonPath("$.description").value(createRequest.getDescription()))
-                    .andExpect(jsonPath("$.dueDate").value(createRequest.getDueDate()))
-                    .andExpect(jsonPath("$.status").value(createRequest.getStatus().toString()))
-                    .andExpect(jsonPath("$.priority").value(createRequest.getPriority().toString()))
-                    .andExpect(jsonPath("$.assignedTo").value(createRequest.getAssignedTo()))
+                    .andExpect(jsonPath("$.dueDate").value(createRequest.getDue_date()))
+                    .andExpect(jsonPath("$.status").value(createRequest.getStatus()))
+                    .andExpect(jsonPath("$.priority").value(createRequest.getPriority()))
+                    .andExpect(jsonPath("$.assignedTo").value(createRequest.getAssigned_to()))
                     .andExpect(jsonPath("$.createdBy").exists())
                     .andExpect(jsonPath("$.createdAt").isNotEmpty())
                     .andExpect(jsonPath("$.updatedAt").isNotEmpty());

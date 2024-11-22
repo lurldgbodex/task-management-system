@@ -15,7 +15,7 @@ import task_management_system.user.repository.UserRepository;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.UUID;
+import java.util.Set;
 
 @Component
 @Slf4j
@@ -30,7 +30,7 @@ public class DatabaseSeeder implements CommandLineRunner {
     private String password;
 
     @Override
-    public void run(String... args) throws Exception {
+    public void run(String... args) {
         if (isDatabaseEmpty()) {
             seedDatabase();
             log.info("Database seeded");
@@ -64,7 +64,7 @@ public class DatabaseSeeder implements CommandLineRunner {
                 .description("Task created when application starts")
                 .createdBy(user)
                 .dueDate(LocalDateTime.now())
-                .tags(List.of("Test", "seeded data"))
+                .tags(Set.of("Test", "seeded data"))
                 .priority(TaskPriority.LOW)
                 .status(TaskStatus.IN_PROGRESS)
                 .build();
@@ -74,7 +74,7 @@ public class DatabaseSeeder implements CommandLineRunner {
                 .description("Task created when application starts")
                 .createdBy(user2)
                 .dueDate(LocalDateTime.now().plusDays(10))
-                .tags(List.of("Test", "seeded data"))
+                .tags(Set.of("Test", "seeded data"))
                 .priority(TaskPriority.MEDIUM)
                 .status(TaskStatus.PENDING)
                 .build();
@@ -84,7 +84,7 @@ public class DatabaseSeeder implements CommandLineRunner {
                 .description("Task created when application starts")
                 .createdBy(user)
                 .dueDate(LocalDateTime.now().plusDays(20))
-                .tags(List.of("Test", "seeded data"))
+                .tags(Set.of("Test", "seeded data"))
                 .priority(TaskPriority.MEDIUM)
                 .status(TaskStatus.PENDING)
                 .build();
@@ -94,7 +94,7 @@ public class DatabaseSeeder implements CommandLineRunner {
                 .description("Task created when application starts")
                 .createdBy(user2)
                 .dueDate(LocalDateTime.now().plusDays(30))
-                .tags(List.of("Test", "seeded data"))
+                .tags(Set.of("Test", "seeded data"))
                 .priority(TaskPriority.LOW)
                 .status(TaskStatus.IN_PROGRESS)
                 .build();
@@ -104,7 +104,7 @@ public class DatabaseSeeder implements CommandLineRunner {
                 .description("Task created when application starts")
                 .createdBy(user)
                 .dueDate(LocalDateTime.now())
-                .tags(List.of("Test", "seeded data"))
+                .tags(Set.of("Test", "seeded data"))
                 .priority(TaskPriority.MEDIUM)
                 .status(TaskStatus.COMPLETED)
                 .build();

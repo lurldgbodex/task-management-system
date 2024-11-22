@@ -67,7 +67,7 @@ class UserControllerTest {
         void registerUserWithNoData() throws Exception {
             String requestString = objectMapper.writeValueAsString(userRequest);
 
-            mockMvc.perform(post("/users/register")
+            mockMvc.perform(post("/api/v1/users/register")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(requestString))
                     .andExpect(status().isBadRequest())
@@ -83,7 +83,7 @@ class UserControllerTest {
             userRequest.setPassword("P@sswarD-cu3d");
             String requestString = objectMapper.writeValueAsString(userRequest);
 
-            mockMvc.perform(post("/users/register")
+            mockMvc.perform(post("/api/v1/users/register")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(requestString))
                     .andExpect(status().isBadRequest())
@@ -99,7 +99,7 @@ class UserControllerTest {
 
             String requestString = objectMapper.writeValueAsString(userRequest);
 
-            mockMvc.perform(post("/users/register")
+            mockMvc.perform(post("/api/v1/users/register")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(requestString))
                     .andExpect(status().isBadRequest())
@@ -129,7 +129,7 @@ class UserControllerTest {
 
             String requestString = objectMapper.writeValueAsString(userRequest);
 
-            mockMvc.perform(post("/users/register")
+            mockMvc.perform(post("/api/v1/users/register")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(requestString))
                     .andExpect(status().isCreated())
@@ -169,7 +169,7 @@ class UserControllerTest {
 
             String requestString = objectMapper.writeValueAsString(loginRequest);
 
-            mockMvc.perform(post("/users/login")
+            mockMvc.perform(post("/api/v1/users/login")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(requestString))
                     .andExpect(status().isOk())
@@ -184,7 +184,7 @@ class UserControllerTest {
 
             String requestString = objectMapper.writeValueAsString(loginRequest);
 
-            mockMvc.perform(post("/users/login")
+            mockMvc.perform(post("/api/v1/users/login")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(requestString))
                     .andExpect(status().isBadRequest())
@@ -200,7 +200,7 @@ class UserControllerTest {
 
             when(userService.authenticate(loginRequest)).thenThrow(BadCredentialsException.class);
 
-            mockMvc.perform(post("/users/login")
+            mockMvc.perform(post("/api/v1/users/login")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(requestString))
                     .andExpect(status().isUnauthorized())
