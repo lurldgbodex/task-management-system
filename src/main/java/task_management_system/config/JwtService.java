@@ -42,10 +42,6 @@ public class JwtService {
                 && !isTokenExpired(token);
     }
 
-    public long getExpirationTime() {
-        return JWT_TOKEN_VALID_TIME;
-    }
-
     private boolean isTokenExpired(String token) {
         Date expirationDate =  getTokenPayloads(token)
                 .getExpiration();

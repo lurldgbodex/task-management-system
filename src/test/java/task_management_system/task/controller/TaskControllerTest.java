@@ -99,13 +99,13 @@ class TaskControllerTest {
                     .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                     .andExpect(jsonPath("$.title").value(createRequest.getTitle()))
                     .andExpect(jsonPath("$.description").value(createRequest.getDescription()))
-                    .andExpect(jsonPath("$.dueDate").value(createRequest.getDue_date()))
+                    .andExpect(jsonPath("$.due_date").value(createRequest.getDue_date()))
                     .andExpect(jsonPath("$.status").value(createRequest.getStatus()))
                     .andExpect(jsonPath("$.priority").value(createRequest.getPriority()))
-                    .andExpect(jsonPath("$.assignedTo").value(createRequest.getAssigned_to()))
-                    .andExpect(jsonPath("$.createdBy").exists())
-                    .andExpect(jsonPath("$.createdAt").isNotEmpty())
-                    .andExpect(jsonPath("$.updatedAt").isNotEmpty());
+                    .andExpect(jsonPath("$.assigned_to").value(createRequest.getAssigned_to()))
+                    .andExpect(jsonPath("$.created_by").exists())
+                    .andExpect(jsonPath("$.created_at").isNotEmpty())
+                    .andExpect(jsonPath("$.updated_at").isNotEmpty());
         }
 
         @Test
