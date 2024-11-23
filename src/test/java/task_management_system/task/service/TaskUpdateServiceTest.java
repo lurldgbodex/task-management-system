@@ -13,6 +13,7 @@ import task_management_system.task.dto.UpdateTask;
 import task_management_system.task.entity.Task;
 import task_management_system.task.entity.TaskRole;
 import task_management_system.task.enums.RoleType;
+import task_management_system.task.enums.TaskPriority;
 import task_management_system.task.enums.TaskStatus;
 import task_management_system.task.repository.TaskRepository;
 import task_management_system.task.repository.TaskRoleRepository;
@@ -98,12 +99,32 @@ class TaskUpdateServiceTest {
         User authUser = new User();
         authUser.setId(UUID.randomUUID());
 
-        Task task = new Task();
         TaskRole role = new TaskRole();
         role.setRoleType(RoleType.CREATOR);
 
         try (MockedStatic<TaskUtils> mockedStatic = mockStatic(TaskUtils.class)) {
             mockedStatic.when(() -> TaskUtils.parseEnum(TaskStatus.class, "INVALID_STATUS"))
+                    .thenThrow(BadRequestException.class);
+
+            assertThrows(BadRequestException.class, () ->
+                    underTest.updateTask(taskId, request, authUser));
+        }
+    }
+
+    @Test
+    void testUpdateTask_InvalidPriority() {
+        UUID taskId = UUID.randomUUID();
+        UpdateTask request = new UpdateTask();
+        request.setPriority("INVALID_PRIORITY");
+
+        User authUser = new User();
+        authUser.setId(UUID.randomUUID());
+
+        TaskRole role = new TaskRole();
+        role.setRoleType(RoleType.CREATOR);
+
+        try (MockedStatic<TaskUtils> mockedStatic = mockStatic(TaskUtils.class)) {
+            mockedStatic.when(() -> TaskUtils.parseEnum(TaskPriority.class, "INVALID_PRIORITY"))
                     .thenThrow(BadRequestException.class);
 
             assertThrows(BadRequestException.class, () ->

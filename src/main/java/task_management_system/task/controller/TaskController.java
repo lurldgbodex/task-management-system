@@ -88,13 +88,6 @@ public class TaskController {
                             schema = @Schema(implementation = CustomResponse.class)
                     )
             ),
-            @ApiResponse(
-                    responseCode = "403", description = "Authenticated user trying to access resource they are not authorized",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = CustomResponse.class)
-                    )
-            )
     })
     @Operation(
             summary = "Get all tasks with pagination",

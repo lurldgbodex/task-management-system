@@ -18,7 +18,7 @@ public class CreateTaskRequest {
     @NotBlank(message = "description is required")
     private String description;
 
-    @NotBlank(message = "dueDate is required")
+    @NotBlank(message = "due_date is required")
     @Pattern(
             regexp = "\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}",
             message = "dueDate must be in the format yyyy-MM-ddTHH:mm:ss"
