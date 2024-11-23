@@ -31,7 +31,7 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable) // CSRF disabled because this is a stateless API using token-based authentication
                 .cors(Customizer.withDefaults())
                 .authorizeHttpRequests((requests) -> requests
-                        .requestMatchers("/users/**", "/actuator/**").permitAll()
+                        .requestMatchers("/api/v1/users/**", "/actuator/**").permitAll()
                         .requestMatchers("/api/docs/**", "/docs/**", "/swagger-ui/**").permitAll()
                         .anyRequest().authenticated())
                 .exceptionHandling(cep -> cep.authenticationEntryPoint(customAuthEntryPoint))

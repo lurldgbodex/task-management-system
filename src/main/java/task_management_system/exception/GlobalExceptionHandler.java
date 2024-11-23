@@ -50,6 +50,12 @@ public class GlobalExceptionHandler {
         return setResponse(HttpStatus.UNAUTHORIZED.toString(), ex.getMessage());
     }
 
+    @ExceptionHandler(ForbiddenException.class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    public CustomResponse handleForbidden(ForbiddenException ex) {
+        return setResponse(HttpStatus.FORBIDDEN.toString(), ex.getMessage());
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ValidationException InvalidArgumentHandler(MethodArgumentNotValidException ex) {
@@ -137,13 +143,13 @@ public class GlobalExceptionHandler {
                 ex.getMessage());
     }
 
-//    @ExceptionHandler(Exception.class)
-//    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-//    public CustomResponse handleSecurityException(Exception ex) {
-//        log.info(ex.getMessage());
-//        return setResponse(HttpStatus.INTERNAL_SERVER_ERROR.toString(),
-//                "Unknown internal server error");
-//    }
+    @ExceptionHandler(Exception.class)
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    public CustomResponse handleSecurityException(Exception ex) {
+        log.info(ex.getMessage());
+        return setResponse(HttpStatus.INTERNAL_SERVER_ERROR.toString(),
+                "Unknown internal server error");
+    }
 
     private CustomResponse setResponse(String status, String message) {
         return CustomResponse.builder()
